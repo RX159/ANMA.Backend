@@ -151,6 +151,56 @@ const geocode3 = function(North, South, East, West, ciudad, callback)
 
 }
 
+
+const geocode4 = function(ciudad,callback)
+{
+
+	const url = "http://api.geonames.org/search?name_equals="+ciudad+"&maxRows=10&username=RX159"
+
+
+	request({url, json: true}, function(error, response) 
+	{ 
+		if(error)
+		{
+			console.log('Error, checar internet')
+		}
+		else
+		{
+			//console.log(response.body)
+			
+			if(response.body == undefined)
+			{
+				console.log('Error, No llego bien el request')
+			}
+			else
+			{
+				//console.log(response.body.geonames[0].countryCode)
+				if(ciudad == response.body.geonames[0].toponymName)
+				{
+					//console.log(response.body)
+					//const data = response.body.geonames[0]
+					const Lon = data.lng
+					const Lat = data.lat
+					//const Code = data.countryCode
+					//console.log(Lon,Lat)
+					callback(Lat,Lon)
+
+				}
+				else
+				{
+					console.log("Error, Ciudad/Lugar mal escrita /o no especificado")
+
+				}
+				
+			}
+			
+
+			
+		}
+		
+	})
+
+}
 /*
 const World = function()
 {
@@ -214,13 +264,30 @@ const searchEarthQuakes = function(Lugar) {
 					//console.log(markers)
 				})
 				*/
-				//res.send(markers)
+				res.send(markers)
 			}//)
 		})
 
 	})
 }
 
+
+const searchlocation = function(Lugar) {
+	
+	//const Lugar = 'Monterrey'
+	geocode4(Lugar, function(Lat,Lon) 
+	{
+		location = {
+			Latitude = Lat,
+			Longitud = Lon
+		}
+
+		res.send(location)
+
+	})
+}
+
 module.exports = {
   searchEarthQuakes : searchEarthQuakes,
+  searchlocation : searchlocation
 }
