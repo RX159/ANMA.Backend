@@ -1,6 +1,6 @@
 const request = require('request')
 const express = require('express')
-const router = require('./routes')
+const router = require('./routes.js')
 
 const app = express()
 const port = process.env.PORT || 3000
@@ -8,60 +8,47 @@ const port = process.env.PORT || 3000
 app.use(express.json()) // parsea a json
 app.use(router)
 
-
-app.listen(port, function() {
-  console.log('Server up and running on port ' + port)
-})
-
-
+//The array of the markers
 var markers = new Array
-//GoogleAPIKEY = 'AIzaSyAqfVfnIq48fSqyiSuNUbc2txi0a7IVbzY'
-//Sacar la ciudad
-//http://api.geonames.org/search?name_equals=Monterrey&east,west,north,south&maxRows=1&username=RX159
 
-//Ok, el primer problema de todos es que me van a dar una ciudad o una location, de ahi tengo que sacar
-//Lat y longitud, y de esos un bound box para el area.
-
-//Todo eso lo hare con reverse GeoCoding, dentro del mismo link que me pasaron
-//Usuario es RX159
-//&east,west,north,south&inclBbox
-
+//I used the term geocode for everyfuntcion
 const geocode = function(ciudad,callback)
 {
-
+	//This firts-function brings back the code of the country of the city/place searched for
 	const url = "http://api.geonames.org/search?name_equals="+ciudad+"&maxRows=10&username=RX159"
 
-
+	//The request is formed
 	request({url, json: true}, function(error, response) 
 	{ 
 		if(error)
 		{
+			//The error for when there is no internet
 			console.log('Error, checar internet')
 		}
 		else
 		{
-			//console.log(response.body)
 			
 			if(response.body == undefined)
 			{
+				//The error for when a request arrives corrupted
 				console.log('Error, No llego bien el request')
 			}
 			else
 			{
-				//console.log(response.body.geonames[0].countryCode)
+				//Verify that the place we searched for is at the top of the list
 				if(ciudad == response.body.geonames[0].toponymName)
 				{
-					//console.log(response.body)
+					//Sumarize the response body into a single variable
 					const data = response.body.geonames[0]
-					//const Lon = data.lng
-					//const Lat = data.lat
+					//get the country code
 					const Code = data.countryCode
-					//console.log(Lon,Lat)
+					//first callback
 					callback(Code,ciudad)
 
 				}
 				else
 				{
+					//If the place could not be found
 					console.log("Error, Ciudad/Lugar mal escrita /o no especificado")
 
 				}
@@ -76,21 +63,14 @@ const geocode = function(ciudad,callback)
 
 }
 
-//http://api.geonames.org/findNearbyPlaceName?lat=25.6750698&lng=-100.3184662&east,west,north,south&username=
-//http://api.geonames.org/earthquakesJSON?north=44.1&south=-9.9&east=-22.4&west=55.2&username=rx159
-
 const geocode2 = function (Code,Ciudad,callback)
 {
-	//http://api.geonames.org/countryInfo?country=MX&username=RX159
-
-	// url = 'http://api.geonames.org/earthquakesJSON?north='+North+'&south='+South+'&east='+East+'&west='+West+'.2&username=rx159'
-
+	//Next url is to get the bounding box of the whole country where we are searching
 	const url = 'http://api.geonames.org/countryInfo?country='+Code+'&username=RX159'
 
-	//console.log(url)
+	//All comments of errors and such are the same as the ones in geocode
 	request({url, json: true}, function(error, response) 
 	{ 
-		//console.log(response.body.geonames[0])
 		
 		if(error)
 		{
@@ -104,13 +84,13 @@ const geocode2 = function (Code,Ciudad,callback)
 			}
 			else
 			{
-				//console.log(response.body)
+				//we save the coordiantes of the bounding box of the country
 				const North = response.body.geonames[0].north
 				const South = response.body.geonames[0].south
 				const East = response.body.geonames[0].east
 				const West = response.body.geonames[0].west
 
-
+				//second callback
 				callback(North,South,East,West,Ciudad)
 			}
 		}
@@ -122,11 +102,10 @@ const geocode2 = function (Code,Ciudad,callback)
 const geocode3 = function(North, South, East, West, ciudad, callback)
 {
 
-	//const url = "http://api.geonames.org/search?name_equals="+ciudad+"&maxRows=10&username=RX159"
+	//We search for the nearby earthquakes, using the boundin box of the whole country.
 	const url = 'http://api.geonames.org/earthquakesJSON?north='+North+'0&south='+South+'&east='+East+'&west='+West+'&date=2019-03-06&username=rx159'
-	//const url = "http://api.geonames.org/search?name_equals="+ciudad+"&east=50,west=50,nort=50,sout=50&maxRows=10&username=RX159"
 
-	//console.log(url)
+	//all erros are the same as geocode
 	request({url, json: true}, function(error, response) 
 	{ 
 		if(error)
@@ -135,40 +114,28 @@ const geocode3 = function(North, South, East, West, ciudad, callback)
 		}
 		else
 		{
-			//console.log(response.body)
-			
 			if(response.body == undefined)
 			{
 				console.log('Error, No llego bien el request')
 			}
 			else
 			{
-				//console.log(response.body.earthquakes)
-				//console.log('----------')
+				//We have to save the top 10 results by date, so a for is used to store them
 				for (var i = 0; i<response.body.earthquakes.length ; i++)
 				{
-					//console.log(response.body.earthquakes[i])
 					markers[i] = response.body.earthquakes[i]
-					//console.log(markers[i])
 				}
-
-				//console.log(markers)
-				callback(markers)
-				
+				//Last callback
+				callback(markers)	
 			}
-			
-
-			
 		}
-		
 	})
-
 }
 
 
 const geocode4 = function(ciudad,callback)
 {
-
+	//This is a url used to get the specific Lat and Lon of the plasce, in order to center the map
 	const url = "http://api.geonames.org/search?name_equals="+ciudad+"&maxRows=10&username=RX159"
 
 
@@ -179,24 +146,19 @@ const geocode4 = function(ciudad,callback)
 			console.log('Error, checar internet')
 		}
 		else
-		{
-			//console.log(response.body)
-			
+		{		
 			if(response.body == undefined)
 			{
 				console.log('Error, No llego bien el request')
 			}
 			else
 			{
-				//console.log(response.body.geonames[0].countryCode)
 				if(ciudad == response.body.geonames[0].toponymName)
 				{
-					//console.log(response.body)
-					//const data = response.body.geonames[0]
+					//Saving the relevant data
 					const Lon = data.lng
 					const Lat = data.lat
-					//const Code = data.countryCode
-					//console.log(Lon,Lat)
+					//Separate callback
 					callback(Lat,Lon)
 
 				}
@@ -215,7 +177,7 @@ const geocode4 = function(ciudad,callback)
 	})
 
 }
-/*
+/* this used to be the code, that searched the whole world
 const World = function()
 {
 
@@ -260,35 +222,35 @@ const World = function()
 	})
 }
 */
-
-const searchEarthQuakes = function(Lugar) {
-	
-	//const Lugar = 'Monterrey'
+//The fucntion that the route would guide us to
+//This function is for the top 10 earthquakes
+const searchEarthQuakes = function(req, res) {
+	//The place would com in the form of a request
+	var Lugar = req.Lugar
 	geocode(Lugar, function(Code,Ciudad) 
 	{
 		geocode2(Code,Ciudad, function(North, South, East, West, ciudad)
 		{
 			geocode3(North, South, East, West, ciudad,) //function(markers)
 			{
-				console.log(wmarkers)
-				/*
+				/*The code for the world markers
 				World(function(wmarkers)
 				{
 					console.log(wmarkers)
-					//console.log(markers)
 				})
 				*/
-				res.send(markers)
+				//The return of the markers in the form of a response
+				return res.send(markers)
 			}//)
 		})
 
 	})
 }
 
-
-const searchlocation = function(Lugar) {
+//The function to get the specific lon and lat of the place
+const searchlocation = function(req, res) {
 	
-	//const Lugar = 'Monterrey'
+	var Lugar = req.Lugar
 	geocode4(Lugar, function(Lat,Lon) 
 	{
 		location = {
@@ -296,12 +258,18 @@ const searchlocation = function(Lugar) {
 			Longitud : Lon
 		}
 
-		res.send(location)
+		return res.send(location)
 
 	})
 }
 
+//Exporting the functions for the routes
 module.exports = {
   searchEarthQuakes : searchEarthQuakes,
   searchlocation : searchlocation
 }
+
+//Listening for the port, given that app is the main space
+app.listen(port, function() {
+  console.log('Server up and running on port ' + port)
+})
