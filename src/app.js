@@ -292,8 +292,8 @@ const searchlocation = function(Lugar) {
 	geocode4(Lugar, function(Lat,Lon) 
 	{
 		location = {
-			Latitude = Lat,
-			Longitud = Lon
+			Latitude : Lat,
+			Longitud : Lon
 		}
 
 		res.send(location)

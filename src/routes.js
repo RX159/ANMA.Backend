@@ -1,10 +1,10 @@
 const express = require('express')
 const router = express.Router()
 
-const earthquake = require('../app.js')
+const earthquake = require('./app.js')
 
-router.get('/earthquake', earthquake.searchEarthQuakes)
-router.get('/searchlocation', earthquake.searchlocation)
+router.post('/earthquake', earthquake.searchEarthQuakes)
+router.post('/searchlocation', earthquake.searchlocation)
 
 router.get('*', function(req, res) {
   res.send({
